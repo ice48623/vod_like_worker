@@ -4,9 +4,9 @@ import os
 import pika
 import json
 import logging
+from rabbit import Rabbit
 
 
-RABBIT_HOST = os.getenv('RABBIT_HOST', 'localhost')
 MONGO_URL = os.getenv('MONGO_URL', 'localhost')
 MONGO_PORT = int(os.getenv('MONGO_PORT', 27017))
 MONGO_DB = os.getenv('MONGO_DB', 'my_db')
@@ -21,42 +21,37 @@ LOG.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 
-connection = pika.BlockingConnection(
-    pika.ConnectionParameters(host=RABBIT_HOST))
-channel = connection.channel()
+def update_video_like(data):
+    video_id = data.get('video_id')
+    like = data.get('like')
+    username = data.get('username')
 
-
-channel.queue_declare(queue='like')
-
-
-def update_vid_like(data):
-    vid_id = data['vid_id']
-    is_unlike = data['is_unlike']
-    incr = 1
-    if is_unlike:
-        incr = -1
+    update_like_db = {}
+    if like:
+        update_like_db = {'$addToSet': {'likes': username} }
+    else:
+        update_like_db = {'$pull': {'likes': username} }
 
     collection.find_one_and_update(
-        {'vid_id': vid_id},
-        {'$inc': {'vid_like': incr}}
+        {'video_id': video_id},
+        update_like_db
     )
 
-    return vid_id
+    return video_id
 
 
 def callback(ch, method, properties, body):
     # update data in mongo db
-    print("Message Recieved")
+    LOG.info("Message Recieved")
     data = json.loads(body)
-    vid_id = update_vid_like(data)
+    video_id = update_video_like(data)
 
-    LOG.info(f'Like status of video, {vid_id}, is updated')
-
-
-channel.basic_consume(callback,
-                      queue='like',
-                      no_ack=True)
+    LOG.info(f'Like status of video, {video_id}, is updated')
 
 
-LOG.info(' [*] Waiting for Job.')
-channel.start_consuming()
+if __name__ == '__main__':
+    rabbit = Rabbit('like')
+    rabbit.consume(callback)
+    LOG.info(' [*] Waiting for Job.')
+    
+    rabbit.start_consuming()
