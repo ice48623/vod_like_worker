@@ -6,8 +6,9 @@ import json
 import logging
 
 
+RABBIT_HOST = os.getenv('RABBIT_HOST', 'localhost')
 MONGO_URL = os.getenv('MONGO_URL', 'localhost')
-MONGO_PORT = os.getenv('MONGO_PORT', 27017)
+MONGO_PORT = int(os.getenv('MONGO_PORT', 27017))
 MONGO_DB = os.getenv('MONGO_DB', 'my_db')
 MONGO_COLLECTION = os.getenv('MONGO_COLLECTION', 'my_collection')
 mongoClient = MongoClient(f'mongodb://{MONGO_URL}', MONGO_PORT)
@@ -21,7 +22,7 @@ LOG.basicConfig(
 )
 
 connection = pika.BlockingConnection(
-    pika.ConnectionParameters(host='localhost'))
+    pika.ConnectionParameters(host=RABBIT_HOST))
 channel = connection.channel()
 
 
