@@ -24,13 +24,13 @@ LOG.basicConfig(
 def update_video_like(data):
     video_id = data.get('video_id')
     like = data.get('like')
-    username = data.get('username')
+    uid = data.get('uid')
 
     update_like_db = {}
     if like:
-        update_like_db = {'$addToSet': {'likes': username} }
+        update_like_db = {'$addToSet': {'likes': uid} }
     else:
-        update_like_db = {'$pull': {'likes': username} }
+        update_like_db = {'$pull': {'likes': uid} }
 
     collection.find_one_and_update(
         {'video_id': video_id},
